@@ -1,0 +1,9 @@
+{
+  "name": "ahoge-survivors",
+  "version": "1.0.0",
+  "description": "《呆毛幸存者：离谱地下城》(AHOGE SURVIVORS: Absurdia) — 获奖级卡通Q版肉鸽割草生存游戏（单文件离线可玩）",
+  "private": true,
+  "scripts": {
+    "build": "node build.js"
+  }
+}

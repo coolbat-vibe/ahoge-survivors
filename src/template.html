@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>呆毛幸存者：离谱地下城 | AHOGE SURVIVORS</title>
+  <style>
+/*__INLINE_CSS__*/
+  </style>
+</head>
+<body>
+  <canvas id="game-canvas"></canvas>
+
+  <!-- Toast & Boss Alert Overlays -->
+  <div id="toast-stack"></div>
+  <div id="boss-alert-banner" class="hidden">
+    <div id="boss-alert-header" style="font-size:14px; font-weight:900; color:#FFE047; letter-spacing:2px;">⚠️ 高能预警 · 离谱首领降临 ⚠️</div>
+    <div id="boss-alert-name" class="comic-stroke" style="font-size:30px; font-weight:900; margin:4px 0;"></div>
+    <div id="boss-alert-quote" style="font-size:14px; color:#FFF4D6; font-weight:700;"></div>
+  </div>
+
+  <!-- ====================================================================
+       1. Main Menu & Hero Selection Screen
+       ==================================================================== -->
+  <div id="menu-screen">
+    <div class="menu-topbar">
+      <div class="gold-pill">
+        <span>💰</span>
+        <span id="menu-gold-text">0</span>
+      </div>
+      <div class="menu-nav-btns">
+        <button class="btn btn-sm btn-gold" id="btn-open-shop">🛒 摸鱼小卖部</button>
+        <button class="btn btn-sm btn-cyan" id="btn-open-codex">📖 超武配方图鉴</button>
+        <button class="btn btn-sm" id="btn-open-ach">🏆 成就勋章</button>
+        <button class="btn btn-sm" id="btn-toggle-mute">🔊 音效: 开</button>
+        <button class="btn btn-sm btn-lang" id="btn-toggle-lang" title="Switch Language / 切换中英文">🌐 EN</button>
+        <a class="btn btn-sm btn-x" href="https://x.com/coolbat1999" target="_blank" rel="noopener noreferrer">
+          <svg class="x-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          <span class="i18n-follow-x-short">关注 X</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="hero-brand">
+      <div class="brand-badge" id="menu-brand-badge">★ 获奖级卡通Q版肉鸽割草 · Made by Carbon ★</div>
+      <h1 class="game-title" id="menu-game-title">呆毛幸存者：离谱地下城</h1>
+      <p class="game-tagline comic-stroke" id="menu-game-tagline">“只要我走位够骚，星期一就永远追不上我！”</p>
+    </div>
+
+    <div class="hero-grid" id="hero-grid"></div>
+
+    <div class="menu-launch-bar">
+      <div class="mode-switch">
+        <button class="mode-pill active" id="mode-normal">⚔️ 标准讨伐（8分30秒决战）</button>
+        <button class="mode-pill" id="mode-turbo">🔥 极速狂欢（节奏×1.75 · 经验暴涨）</button>
+      </div>
+      <div class="controls-hint" id="menu-controls-hint">
+        🎮 <b>WASD / 方向键 / 鼠标拖拽</b> 移动 · <b>空格/右键</b> 冲刺特技 · <b>Q</b> 狂热大招 · <b>Tab</b> 切换瞄准
+      </div>
+      <button class="btn btn-gold btn-start-huge" id="btn-start-run">🚀 出发摸鱼！</button>
+    </div>
+
+    <div class="credit-footer">
+      <span class="carbon-badge">⚡ Made by Carbon</span>
+      <a class="credit-x-link" href="https://x.com/coolbat1999" target="_blank" rel="noopener noreferrer">
+        <svg class="x-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        <span class="i18n-follow-x-full">关注 X @coolbat1999</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       2. In-Game Battle HUD
+       ==================================================================== -->
+  <div id="hud" class="hidden">
+    <div class="xp-bar-wrap">
+      <div class="xp-bar-fill" id="hud-xp-fill"></div>
+    </div>
+    <div class="level-badge" id="hud-level-text">Lv.1</div>
+
+    <div class="hud-top-row">
+      <div class="hud-left-panel">
+        <div class="player-vital-card">
+          <img id="hud-avatar" class="vital-avatar" alt="hero" />
+          <div>
+            <div style="font-size:13px; font-weight:900; margin-bottom:3px;" id="hud-hero-name"></div>
+            <div class="hp-bar-outer">
+              <div class="hp-bar-inner" id="hud-hp-fill"></div>
+              <div class="hp-bar-text" id="hud-hp-text">145 / 145</div>
+            </div>
+          </div>
+        </div>
+        <div class="inventory-slots">
+          <div class="slot-row" id="hud-weapons"></div>
+          <div class="slot-row" id="hud-passives"></div>
+          <div class="buff-row" id="hud-buffs"></div>
+        </div>
+      </div>
+
+      <div class="hud-center-panel">
+        <div class="run-timer comic-stroke" id="hud-timer">00:00</div>
+        <div class="next-boss-pill" id="hud-next-boss">⏳ 首领降临 01:30</div>
+        <div class="boss-bar-container hidden" id="hud-boss-box">
+          <div class="boss-bar-title" id="hud-boss-name"></div>
+          <div class="boss-hp-track">
+            <div class="boss-hp-fill" id="hud-boss-fill"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hud-right-panel">
+        <div class="stat-chip">💀 <span id="hud-kills">0</span></div>
+        <div class="stat-chip" style="color:var(--gold);">💰 <span id="hud-gold">0</span></div>
+        <div class="stat-chip" style="color:var(--mint); font-size:12px;" id="hud-fps">60 FPS</div>
+        <button class="btn btn-sm" id="btn-hud-pause">⏸ 暂停</button>
+      </div>
+    </div>
+
+    <div class="hud-bottom-dock">
+      <button class="skill-btn ready" id="btn-skill-dash">
+        <span class="key-cap">Space</span>
+        <span id="hud-dash-label">冲刺就绪</span>
+      </button>
+      <button class="skill-btn" id="btn-skill-fever">
+        <span class="key-cap">Q</span>
+        <span id="hud-fever-label">狂热 25%</span>
+      </button>
+      <button class="skill-btn" id="btn-skill-aim">
+        <span class="key-cap">Tab</span>
+        <span id="hud-aim-label">🎯 自动索敌</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       3. Level-Up 3-Choice Draft Modal
+       ==================================================================== -->
+  <div id="modal-levelup" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title comic-stroke" id="levelup-modal-title">✨ 摸鱼悟道 · 选择强化 ✨</h2>
+          <div style="font-size:13px; color:var(--muted);" id="levelup-modal-sub">凑齐【满级Lv.5武器 + 对应专属被动】，拾取宝箱即可觉醒 ★超级武器！</div>
+        </div>
+        <div style="font-size:13px; font-weight:900; color:var(--cyan);" id="levelup-hotkey-hint">快捷键 [1] [2] [3]</div>
+      </div>
+
+      <div id="banish-mode-banner" class="banish-banner hidden">🚫 请点击下方任意一张卡牌，将其在本局永久封印排除（不消耗本次升级）！</div>
+      <div class="upgrade-cards-row" id="levelup-cards"></div>
+
+      <div style="display:flex; justify-content:center; gap:12px; margin-top:8px; flex-wrap:wrap;">
+        <button class="btn btn-sm btn-cyan" id="btn-reroll">🎲 甲方改需求（刷新: 1）</button>
+        <button class="btn btn-sm" id="btn-banish">🚫 封印排除（剩余: 1）</button>
+        <button class="btn btn-sm" id="btn-skip-heal">🍗 跳过并吃口烤鸡（+25 HP & +15💰）</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       4. Boss Treasure Chest Roulette Modal
+       ==================================================================== -->
+  <div id="modal-chest" class="modal-overlay hidden">
+    <div class="modal-box" style="max-width:620px; text-align:center;">
+      <h2 class="modal-title comic-stroke" id="chest-title">🎁 离谱黄金宝箱开启！</h2>
+      <p style="color:var(--muted); margin:6px 0 16px;" id="chest-subtitle">好运转盘疯狂旋转中……</p>
+      <div id="chest-rewards-area" style="display:flex; flex-direction:column; gap:12px; margin:18px 0;"></div>
+      <button class="btn btn-gold" id="btn-chest-claim" style="min-width:200px;">⚡ 爽快收下！</button>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       5. Permanent Talent Upgrade Shop Modal
+       ==================================================================== -->
+  <div id="modal-shop" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title comic-stroke" id="shop-modal-title">🛒 摸鱼小卖部 · 局外永久强化</h2>
+          <div style="font-size:13px; color:var(--muted);" id="shop-modal-sub">消耗局内收集的金币永久提升所有英雄战力，随时可免费全额退货重配！</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <div class="gold-pill" style="font-size:15px; padding:6px 14px;">💰 <span id="shop-gold-text">0</span></div>
+          <button class="btn btn-sm btn-coral" id="btn-shop-refund">♻️ 免费洗点</button>
+          <button class="btn btn-sm i18n-close-btn" data-close="modal-shop">✖ 关闭</button>
+        </div>
+      </div>
+      <div class="grid-cards" id="shop-grid"></div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       6. Super Weapon Evolution Recipes & Monster Codex Modal
+       ==================================================================== -->
+  <div id="modal-codex" class="modal-overlay hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title comic-stroke" id="codex-modal-title">📖 ★超级武器合成配方 & 离谱图鉴</h2>
+          <div style="font-size:13px; color:var(--muted);" id="codex-modal-sub">主武器升至 Lv.5 + 持有对应被动宝物 → 开启黄金宝箱或铁砧必出 ★超武觉醒！</div>
+        </div>
+        <button class="btn btn-sm i18n-close-btn" data-close="modal-codex">✖ 关闭</button>
+      </div>
+      <h3 style="margin:6px 0 10px; color:var(--cyan);" id="codex-evo-heading">⚡ 十大★超级武器进化公式</h3>
+      <div class="grid-cards" id="codex-evo-grid"></div>
+      <h3 style="margin:20px 0 10px; color:var(--coral);" id="codex-enemy-heading">👾 地下城魔物与首领名录</h3>
+      <div class="grid-cards" id="codex-enemy-grid"></div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       7. Achievements Wall Modal
+       ==================================================================== -->
+  <div id="modal-ach" class="modal-overlay hidden">
+    <div class="modal-box" style="max-width:760px;">
+      <div class="modal-header">
+        <h2 class="modal-title comic-stroke" id="ach-modal-title">🏆 荣誉摸鱼勋章墙</h2>
+        <button class="btn btn-sm i18n-close-btn" data-close="modal-ach">✖ 关闭</button>
+      </div>
+      <div class="grid-cards" id="ach-grid"></div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       8. Pause & Audio Settings Modal
+       ==================================================================== -->
+  <div id="modal-pause" class="modal-overlay hidden">
+    <div class="modal-box" style="max-width:640px;">
+      <div class="modal-header">
+        <h2 class="modal-title comic-stroke" id="pause-modal-title">⏸ 战术喝水暂停中</h2>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <button class="btn btn-sm btn-lang" id="btn-pause-lang">🌐 EN</button>
+          <button class="btn btn-sm btn-mint" id="btn-resume">▶ 继续战斗</button>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:16px;">
+        <div class="shop-item">
+          <label style="font-weight:900; font-size:14px;" id="pause-bgm-label">🎵 背景音乐音量</label>
+          <input type="range" id="slider-bgm" min="0" max="100" value="36" />
+        </div>
+        <div class="shop-item">
+          <label style="font-weight:900; font-size:14px;" id="pause-sfx-label">💥 打击音效音量</label>
+          <input type="range" id="slider-sfx" min="0" max="100" value="68" />
+        </div>
+      </div>
+
+      <h3 style="margin:8px 0; font-size:16px; color:var(--cyan);" id="pause-dps-heading">📊 当前武器伤害统计</h3>
+      <div id="pause-dps-list" style="margin-bottom:18px;"></div>
+
+      <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+        <button class="btn btn-sm btn-cyan" id="btn-pause-codex">📖 查看超武配方</button>
+        <div style="display:flex; gap:10px;">
+          <button class="btn btn-sm" id="btn-pause-restart">🔄 重新开始</button>
+          <button class="btn btn-sm btn-coral" id="btn-pause-quit">🏠 结算返回主页</button>
+        </div>
+      </div>
+
+      <div class="credit-footer" style="margin-top:14px; padding-top:12px; border-top:2px solid rgba(255,255,255,0.08);">
+        <span class="carbon-badge">⚡ Made by Carbon</span>
+        <a class="credit-x-link" href="https://x.com/coolbat1999" target="_blank" rel="noopener noreferrer">
+          <svg class="x-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          <span class="i18n-follow-x-full">关注 X @coolbat1999</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       9. Victory / Game Over Summary & DPS Report Modal
+       ==================================================================== -->
+  <div id="modal-end" class="modal-overlay hidden">
+    <div class="modal-box" style="max-width:680px;">
+      <div style="text-align:center; margin-bottom:14px;">
+        <h2 class="modal-title comic-stroke" id="end-title" style="font-size:34px;">🎉 讨伐大捷！痛扁星期一！</h2>
+        <p id="end-subtitle" style="color:var(--muted); margin:6px 0 0;"></p>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px; text-align:center;">
+        <div class="shop-item"><div style="color:var(--muted); font-size:12px;" id="end-lbl-time">存活时间</div><div id="end-time" style="font-size:20px; font-weight:900;"></div></div>
+        <div class="shop-item"><div style="color:var(--muted); font-size:12px;" id="end-lbl-lv">达成等级</div><div id="end-lv" style="font-size:20px; font-weight:900; color:var(--cyan);"></div></div>
+        <div class="shop-item"><div style="color:var(--muted); font-size:12px;" id="end-lbl-kills">击败魔物</div><div id="end-kills" style="font-size:20px; font-weight:900; color:var(--coral);"></div></div>
+        <div class="shop-item"><div style="color:var(--muted); font-size:12px;" id="end-lbl-gold">收获金币</div><div id="end-gold" style="font-size:20px; font-weight:900; color:var(--gold);"></div></div>
+      </div>
+
+      <h3 style="margin:6px 0 10px; font-size:16px; color:var(--gold);" id="end-dps-heading">⚔️ 本局武器输出排行榜</h3>
+      <div id="end-dps-list" style="margin-bottom:20px;"></div>
+
+      <div style="display:flex; justify-content:center; gap:14px; flex-wrap:wrap;">
+        <button class="btn btn-mint hidden" id="btn-end-endless">🌈 继续挑战【无尽狂欢模式】！</button>
+        <button class="btn btn-gold" id="btn-end-retry">🔄 再战一局！</button>
+        <button class="btn" id="btn-end-menu">🏠 返回小卖部强化</button>
+      </div>
+
+      <div class="credit-footer" style="margin-top:16px; padding-top:12px; border-top:2px solid rgba(255,255,255,0.08);">
+        <span class="carbon-badge">⚡ Made by Carbon</span>
+        <a class="credit-x-link" href="https://x.com/coolbat1999" target="_blank" rel="noopener noreferrer">
+          <svg class="x-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          <span class="i18n-follow-x-full">关注 X @coolbat1999</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+/*__INLINE_JS__*/
+  </script>
+</body>
+</html>
